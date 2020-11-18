@@ -1,4 +1,6 @@
 const Post = require("../models/Post");
+const sendgrid = require("@sendgrid/mail");
+sendgrid.setApiKey(process.env.SENDGRIDAPIKEY);
 
 exports.viewCreateScreen = function (req, res) {
   res.render("create-post");
@@ -9,6 +11,13 @@ exports.create = function (req, res) {
   post
     .create()
     .then(function (newId) {
+      sendgrid.send({
+        to: "latkolicsebastian@gmail.com",
+        from: "test@test.com",
+        subject: "Congrats on creating a new post!",
+        text: "You did a great job of creating a post.",
+        html: "You did a <strong>great</strong> job of creating a post.",
+      });
       req.flash("success", "New post successfully created.");
       req.session.save(() => res.redirect(`/post/${newId}`));
     })
@@ -20,10 +29,13 @@ exports.create = function (req, res) {
 
 exports.apiCreate = function (req, res) {
   let post = new Post(req.body, req.apiUser._id);
-  post.create().then(function (newId) {
-      res.json("Congrats!")
-    }).catch(function (errors) {
-      res.json(errors)
+  post
+    .create()
+    .then(function (newId) {
+      res.json("Congrats!");
+    })
+    .catch(function (errors) {
+      res.json(errors);
     });
 };
 
@@ -82,28 +94,36 @@ exports.edit = function (req, res) {
     });
 };
 
-exports.delete = function(req, res) {
-	Post.delete(req.params.id, req.visitorId).then(() => {
-		req.flash("success", "Post successfully deleted.")
-		req.session.save(() => res.redirect(`/profile/${req.session.user.username}`))
-	}).catch(() => {
-		req.flash("errors", "You do not have permission to perform that action.")
-		req.session.save(() => res.redirect("/"))
-	})
-}
+exports.delete = function (req, res) {
+  Post.delete(req.params.id, req.visitorId)
+    .then(() => {
+      req.flash("success", "Post successfully deleted.");
+      req.session.save(() =>
+        res.redirect(`/profile/${req.session.user.username}`)
+      );
+    })
+    .catch(() => {
+      req.flash("errors", "You do not have permission to perform that action.");
+      req.session.save(() => res.redirect("/"));
+    });
+};
 
-exports.apiDelete = function(req, res) {
-	Post.delete(req.params.id, req.apiUser._id).then(() => {
-      res.json("Success")
-		}).catch(() => {
-      res.json("You do not have permission to perform that action.")
-		})
-}
+exports.apiDelete = function (req, res) {
+  Post.delete(req.params.id, req.apiUser._id)
+    .then(() => {
+      res.json("Success");
+    })
+    .catch(() => {
+      res.json("You do not have permission to perform that action.");
+    });
+};
 
-exports.search = function(req, res) {
-  Post.search(req.body.searchTerm).then(posts => {
-    res.json(posts)
-  }).catch(() => {
-    res.json([])
-  })
-}
+exports.search = function (req, res) {
+  Post.search(req.body.searchTerm)
+    .then((posts) => {
+      res.json(posts);
+    })
+    .catch(() => {
+      res.json([]);
+    });
+};
